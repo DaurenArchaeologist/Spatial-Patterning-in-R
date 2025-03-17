@@ -18,17 +18,18 @@ artifact_data <- artifact_data %>%
   filter(!is.na(Longitude),
          !is.na(Latitude),
          !is.na(RAWMATERIAL))
-artifact_data$RAWMATERIAL <- as.factor(artifact_data$RAWMATERIAL)
+
 study_window <- owin(xrange = c(78.64065, 78.64306),
                      yrange = c(43.31997775, 43.32382))
 artifact_ppp <- ppp(x     = artifact_data$Longitude,
                     y     = artifact_data$Latitude,
                     marks = artifact_data$RAWMATERIAL,
                     window= study_window)
-
+marks(artifact_ppp) = as.factor(artifact_data$RAWMATERIAL)
+#here is the segregation test, which shows us there is spatial segregation with p value of 0.01 
 segregation.test(artifact_ppp, sigma = bw.ppl, nsim = 99) # T = 153.72, p-value = 0.01
-ProbRM <- relrisk(artifact_ppp, sigma = bw.ppl)
-dominant <- im.apply(ProbRM, which.max)
+ProbRM <- relrisk(artifact_ppp, sigma = bw.ppl) #calculate the relative intensity of each type of point across space
+dominant <- im.apply(ProbRM, which.max) #calculate which has the max intensity at each location
 materials <- levels(marks(artifact_ppp))
 dominant  <- eval.im(factor(dominant, levels = 1:3, labels = materials))
 
@@ -68,7 +69,7 @@ artifact_ppp <- ppp(x     = artifact_data$Longitude,
                     marks = artifact_data$DATACLASS_merged,
                     window= study_window)
 
-segregation.test(artifact_ppp, sigma = bw.ppl, nsim = 99) # T = 108.7, p-value = 0.22 (is this okay?)
+segregation.test(artifact_ppp, sigma = bw.ppl, nsim = 99) # T = 108.7, p-value = 0.22
 ProbClass <- relrisk(artifact_ppp, sigma = bw.ppl)
 dominant <- im.apply(ProbClass, which.max)
 dominant <- eval.im( factor(dominant,
@@ -81,7 +82,7 @@ my_cols <- c("goldenrod2","forestgreen","skyblue2",
              "tomato2","orchid2","gray60","purple")
 
 plot(dominant,
-     main            = "Spatial Segregation by DATACLASS",
+     main            = "Spatial Segregation by Artifact Type",
      col             = my_cols,
      valuesAreFactors= TRUE,
      rib             = TRUE,
