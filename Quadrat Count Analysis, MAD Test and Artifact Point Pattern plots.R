@@ -4,7 +4,9 @@ install.packages("readxl")
 install.packages("remotes")
 install.packages("RColorBrewer")
 install.packages("scales")
+install.packages("sf")
 
+library(sf)
 library(spatstat)
 library(spatstat.explore)
 library(spatstat.core)
@@ -38,6 +40,7 @@ artifact_ppp <- ppp(x = artifact_data$Longitude, y = artifact_data$Latitude, mar
 plot(artifact_ppp, main = "Artifact Point Pattern")
 
 # Quadrat Count analysis
+quadrat.test(artifact_ppp) # p-value < 2.2e-16 = inhomogeneous point process
 quadrat <- quadratcount(artifact_ppp, nx = 14, ny = 11)
 # Plot initial Quadrat Count
 plot(quadrat, main = "Quadrat Count")
@@ -103,31 +106,46 @@ quadrat_height_m <- quadrat_height_deg * meters_per_deg_lat
 cat("Each quadrat is approximately:", round(quadrat_width_m, 2), "m horizontally, and", round(quadrat_height_m, 2), "m vertically\n")
 # Each quadrat is approximately: 13.94 m horizontally, and 38.88 m vertically
 
-# #####################
 # Perform the MAD test
-#mad_test <- mad.test(artifact_ppp, nsim = 999)
-### FROM EMILY: #### 
 mad_test <- mad.test(artifact_ppp, fun = Linhom, sigma = bw.ppl, global = T, nsims = 99, use.theo = T)
+### FROM EMILY: #### 
 # here we are specifying that the test should use the Linhom function 
 # we are also indicating how the degree of smoothing should be estimated with sigma = bw.ppl (this is the method for an inhomogeneous process)
 # I specify that we are interested in the global envelope (global = T) because it is more robust for detecting CSR
 # I also include a border correction (section 7.4.3) to avoid biases due to our artificial borders from survey
-print(mad_test) # Print the MAD test results
-#visualization of the L function (which is a transformation of the K function)
+print(mad_test) #Dauren: # Print the MAD test results # visualization of the L function (which is a transformation of the K function)
 rLfun = envelope(artifact_ppp, Linhom, sigma = bw.ppl,
                  nsim = 99, global = T, use.theory = T)
-plot(rLfun)
-#this shows that points are more clustered than expected at short distances, but more dispersed than expected at larger distances
-# #####################
+pdf("rLfun.pdf", width=8, height=8)
+options(scipen = 10)
+plot(rLfun, main="Inhomogeneous L-function",
+     ylab = expression(italic(L)(italic(r)) ~ plain("(m)")),
+     xlab = expression(r ~ "(m)"),
+     legend     = TRUE,
+     lwd        = 2,
+     legendargs = list(
+       bty = "n",
+       lwd = 3,
+       seg.len= 4
+     )
+)
+dev.off()
+#Dauren: # points are more clustered than expected at short distances, but more dispersed than expected at larger distances
+
 
 # Artifact point pattern based on data class
+# Convert artifact data to spatial data frame and transform to UTM Zone 44N
+artifact_sf <- st_as_sf(artifact_data, coords = c("Longitude", "Latitude"), crs = 4326)  
+artifact_utm <- st_transform(artifact_sf, 32644)  # Convert to meters  
+# Extract transformed coordinates  
+artifact_data$Easting <- st_coordinates(artifact_utm)[,1]  
+artifact_data$Northing <- st_coordinates(artifact_utm)[,2]  
 # Create a data frame
 artifact_ppp <- ppp(x = artifact_data$Longitude, y = artifact_data$Latitude, marks = artifact_data$DATACLASS, window = study_window)
 artifact_df <- data.frame(Longitude = artifact_ppp$x, Latitude = artifact_ppp$y, DATACLASS = artifact_ppp$marks)
 # Ensure DATACLASS is a factor
 artifact_df$DATACLASS <- factor(artifact_df$DATACLASS)
-# Convert the coordinates from degrees to meters relative to the study window's minimum values
-artifact_df <- artifact_df %>% mutate(X_m = (Longitude - study_window$xrange[1]) * meters_per_deg_lon, Y_m = (Latitude - study_window$yrange[1]) * meters_per_deg_lat)
+
 # Create a new variable that groups the artifact types as specified
 artifact_df <- artifact_df %>% mutate(new_dataclass = case_when(
   DATACLASS %in% c("CORE", "COREFRAG") ~ "Core & Fragment",
@@ -148,11 +166,11 @@ custom_shapes <- c(16, 17, 15, 3, 18, 19, 8)
 # Define custom colors for each type
 custom_colors <- c("darkblue", "firebrick", "forestgreen", "darkorange", "purple", "goldenrod", "black")
 # Create the plot with the final design
-p <- ggplot(artifact_df, aes(x = X_m, y = Y_m, shape = new_dataclass, color = new_dataclass)) +
+p <- ggplot(artifact_df, aes(x = Longitude, y = Latitude, shape = new_dataclass, color = new_dataclass)) +
   geom_point(size = 3) +
   scale_shape_manual(values = custom_shapes) +
   scale_color_manual(values = custom_colors) +
-  labs(title = "Artifact Point Pattern", x = expression("East"%->%"(m)"), y = expression("North"%->%"(m)"), shape = "Artifact Type", color = "Artifact Type") +
+  labs(title = "Artifact Point Pattern", x = expression("East"%->%"(Longitude)"), y = expression("North"%->%"(Latitude)"), shape = "Artifact Type", color = "Artifact Type") +
   theme_minimal() +
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
