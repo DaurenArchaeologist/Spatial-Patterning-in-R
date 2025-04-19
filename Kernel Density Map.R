@@ -35,32 +35,36 @@ library(scales)
 p_weight_hist <- ggplot(artifact_data, aes(x = Weight)) +
   geom_histogram(bins = 150, fill = "lightgreen", color = "black") +
   scale_x_log10(
-    breaks = c(0.3, 0.75, 2, 5, 10, 20, 30, 50, 100, 500, 1000),  # Custom tick positions
+    breaks = c(0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000),  # Custom tick positions
     labels = scales::label_number()
   ) +
   scale_y_continuous(
     breaks = seq(0, max(artifact_data$Weight, na.rm = TRUE), by = 5)  # More y-axis ticks
   ) +
-  labs(x = "Grams", y = "Frequency", 
-       title = "Histogram of Artifact Weight (Log Scale)") +
-  theme_minimal()
+  labs(x = "Weight (g)", y = "Frequency", 
+       title = "Total Artifact Weight Distribution (Log Scale)") +
+  theme_minimal() +
+theme(
+  plot.title = element_text(face = "bold", hjust = 0.5, size = 12),
+  axis.title = element_text(face = "bold", size = 10),
+  axis.text = element_text(size = 9),
+  strip.text = element_text(face = "bold", size = 10),
+  legend.position = "none"
+)
 print(p_weight_hist)
-ggsave("Histogram_Artifact_Weight.pdf", plot = p_weight_hist, width = 12, height = 6)
+ggsave("Histogram_Artifact_Weight.pdf", plot = p_weight_hist, width = 12, height = 6, dpi = 300)
 
 # Kernel density map
 install.packages("ks")
 library(ks)
-# Prepare the coordinates and weight vector
 coords <- as.matrix(artifact_data[, c("X_m", "Y_m")])
 w <- artifact_data$Weight
-# Define a custom bandwidth matrix
 H_custom <- Hpi(coords) * 1.0
 # Compute the weighted kernel density estimate
 kde_res <- kde(x = coords, w = w, H = H_custom, compute.cont = TRUE)
 # Convert the kde result to a data frame for plotting with ggplot2
 dens_df <- expand.grid(x = kde_res$eval.points[[1]], y = kde_res$eval.points[[2]])
 dens_df$density <- as.vector(kde_res$estimate)
-# Normalize density values
 dens_df$density <- dens_df$density / max(dens_df$density)
 # Flip y-axis
 y_mid <- dens_df$y
@@ -92,18 +96,3 @@ p_weight_density <- ggplot(dens_df, aes(x = x, y = y, fill = density)) +
         legend.text = element_text(size = 10))
 print(p_weight_density)
 ggsave("Kernel_Density_Map_Artifact_Weight.pdf", plot = p_weight_density, width = 8, height = 12, dpi = 300)
-
-# scatter plot
-# I didn't save the plot on github
-p_weight_points <- ggplot(artifact_data, aes(x = X_m, y = Y_m, color = Weight)) +
-  geom_point(size = 3, alpha = 0.8) +
-  scale_color_viridis_c(option = "plasma") +
-  coord_fixed() +
-  labs(title = "Spatial Distribution of Artifact Weight",
-       x = expression("East"%->%"(m)"), y = expression("North"%->%"(m)"), color = "Weight") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
-        axis.title = element_text(face = "bold", size = 14),
-        axis.text = element_text(size = 12))
-print(p_weight_points)
-
