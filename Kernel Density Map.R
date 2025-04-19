@@ -1,6 +1,6 @@
 install.packages(c("spatstat.geom", "spatstat.core", "spatstat.linnet", 
                    "ggplot2", "dplyr", "viridis", "readxl", 
-                   "patchwork", "cowplot", "stringr"))
+                   "patchwork", "cowplot", "stringr", "scales"))
 
 library(spatstat.geom)
 library(spatstat.core)
@@ -13,6 +13,7 @@ library(patchwork)
 library(cowplot)
 library(grid)
 library(stringr)
+library(scales)
 
 lon_min <- 78.64065
 lon_max <- 78.64306
@@ -30,16 +31,14 @@ artifact_data <- read_excel("/Users/kisa/Desktop/Surface Artifacts Full Data Dau
   )
 
 # Create histogram of weight distribution via log-transforming the x-axis
-install.packages("scales")
-library(scales)
 p_weight_hist <- ggplot(artifact_data, aes(x = Weight)) +
-  geom_histogram(bins = 150, fill = "lightgreen", color = "black") +
+  geom_histogram(bins = 120, fill = "lightgreen", color = "black") +
   scale_x_log10(
     breaks = c(0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000),  # Custom tick positions
     labels = scales::label_number()
   ) +
   scale_y_continuous(
-    breaks = seq(0, max(artifact_data$Weight, na.rm = TRUE), by = 5)  # More y-axis ticks
+    breaks = seq(0, 18, by = 3)
   ) +
   labs(x = "Weight (g)", y = "Frequency", 
        title = "Total Artifact Weight Distribution (Log Scale)") +
