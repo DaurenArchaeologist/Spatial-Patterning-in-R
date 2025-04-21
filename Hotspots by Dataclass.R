@@ -49,7 +49,7 @@ p <- ggplot(artifact_data, aes(x = X_m, y = Y_m)) +
   coord_fixed(ratio = 0.7,
               xlim = c(0, (lon_max - lon_min) * meters_per_deg_lon),
               ylim = c(0, (lat_max - lat_min) * meters_per_deg_lat)) +
-  labs(x = expression("East"%->%"(m)"), y = expression("North"%->%"(m)"), title = "Hotspots Map") +
+  labs(x = expression("East"%->%"(m)"), y = expression("North"%->%"(m)"), title = "Hotspots Map by Artifact Type") +
   facet_wrap(~ new_dataclass, nrow = 2) +
   theme_minimal() +
   theme(strip.text = element_text(size = 10, face = "bold"),
