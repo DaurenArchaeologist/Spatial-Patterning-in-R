@@ -59,7 +59,7 @@ p_weight_histograms <- ggplot(artifact_data, aes(x = Weight, fill = new_dataclas
                "turquoise", "yellow", "#B8860B")
   ) +
   labs(
-    title = "Artifact Weight Distribution by Dataclass (Log Scale)",
+    title = "Weight Distribution by Artifact Type (Log Scale)",
     x = "Weight (g)", y = "Frequency"
   ) +
   theme_minimal() +
