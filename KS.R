@@ -29,7 +29,6 @@ random_elev   <- random_elev + runif(length(random_elev), min = -0.01, max = 0.0
 ks_test <- ks.test(artifact_elev, random_elev)
 print(ks_test) # D = 0.5991, p-value < 2.2e-16
 
-c
 #### FROM EMILY: ####
 xmin <- min(artifact_data$Longitude, na.rm = TRUE)
 xmax <- max(artifact_data$Longitude, na.rm = TRUE)
@@ -38,7 +37,7 @@ ymax <- max(artifact_data$Latitude, na.rm = TRUE)
 print(c(xmin, xmax, ymin, ymax))
 study_window <- owin(xrange = c(78.64065, 78.64306), yrange = c(43.31997775, 43.32382))
 artifact_ppp <- ppp(x = artifact_data$Longitude, y = artifact_data$Latitude, marks = NULL, window = study_window)
-# Dauren: I decided not to include these plots, they're visibly different from quadrat count so not easy to understand
+# Dauren: I decided not to include these plots, they look like quadrat count so not easy to understand
 elev_rpj = projectRaster(elevation_raster, crs = 4326)
 elev_crop = crop(elev_rpj, extent(xmin, xmax, ymin, ymax))
 plot(elev_crop)
@@ -48,7 +47,7 @@ elev_im = im(elev_matrix, xrange = c(xmin, xmax), yrange = c(ymin, ymax))
 plot(elev_im)
 #
 cdf.test(artifact_ppp, elev_im, test = "ks", model = "Poisson") #this shows that there is dependence on elevation 
-pdf("KS.pdf", width=10, height=8)
+jpeg("KS.jpg", width = 10, height = 8, units = "in", res = 300)
 options(scipen = 10)
 par(cex = 1.5)  # Dauren: Increase text size (including legend)
 ks_result <- cdf.test(artifact_ppp, elev_im, test = "ks", model = "Poisson")
@@ -65,18 +64,24 @@ auc(artifact_ppp, elev_im) #this shows that the explanatory power of elevation f
 ###########
 
 # Density on Elevation histogram but modified to show frequency only.
-pdf("Frequency_by_Elevation.pdf", width = 8, height = 6)
+jpeg("Frequency_by_Elevation.jpg", width = 8, height = 6, units = "in", res = 300)
 # Compute histogram to get frequency counts (without plotting)
 hist_data <- hist(artifact_elev, plot = FALSE, breaks = 20)
 # Compute density and scale it to match histogram frequencies
 dens <- density(artifact_elev)
 dens$y <- dens$y * max(hist_data$counts) / max(dens$y)  # Scale density to histogram counts
+# Add vertical line for median
+artifact_median <- median(artifact_elev)
 # Plot an empty histogram to set the correct y-axis
 plot(hist_data$mids, hist_data$counts, type = "n", 
      main = "Artifact Frequency by Elevation", 
-     xlab = "Elevation (m)", ylab = "Frequency")
+     xlab = "Elevation", ylab = "Frequency")
 # Overlay the density plot
 lines(dens, col = "red", lwd = 2)
+abline(v = artifact_median, col = "blue", lwd = 2, lty = 2)
 # Add legend
-legend("topright", legend = "Artifacts", col = "red", lwd = 2)
+legend("topright", 
+       legend = c("Artifacts", "Median"), 
+       col = c("red", "blue"), 
+       lwd = 2, lty = c(1, 2))
 dev.off()
